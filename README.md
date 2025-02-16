@@ -4,7 +4,7 @@ This repository contains a complete machine learning pipeline, covering data ing
 
 
 ## Pipeline Diagram
-![Pipeline Diagram](Pipeline_Diagram.png)
+![Pipeline Diagram](pipeline_diagram.png)
 
 
 ## Project Structure

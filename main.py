@@ -15,7 +15,7 @@ model = joblib.load(MODEL_PATH)
 label_encoder = joblib.load(LABEL_ENCODER_PATH)
 
 # Configure logging for monitoring
-logging.basicConfig(filename='model_logs.log', level=logging.INFO)
+logging.basicConfig(filename='logs/model_logs.log', level=logging.INFO)
 
 
 @app.post('/predict')

@@ -169,6 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-analysis/extracted_data/data/*.csv
-extracted_data/data/*.csv
-data/*.csv
+analysis/extracted_data/
+extracted_data/
+data/
+dictionaries/

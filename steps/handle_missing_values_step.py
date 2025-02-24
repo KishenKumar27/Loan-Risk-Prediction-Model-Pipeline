@@ -33,7 +33,7 @@ def handle_all_missing_values(df: pd.DataFrame, columns: Optional[List[str]] = N
     cleaned_df = handler.handle_missing_values(df)
     return cleaned_df
 
-@step
+@step(enable_cache=False)
 def handle_missing_values_step(df: pd.DataFrame) -> pd.DataFrame:
     """Handles missing values in one step."""
     

@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler, LabelEncoder
+from config import MODEL_DIR, ENCODER_DIR
+import pickle
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -280,8 +282,17 @@ class LabelEncoding(FeatureEngineeringStrategy):
             
             logging.info(f"Applying label encoding to column: {feature}")
             df_transformed[feature] = self.encoder.fit_transform(df_transformed[feature])
+            
+        # Generate encoder filename based on timestamp or versioning logic
+        model_filename = f"{ENCODER_DIR}/label_encoder_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pkl"
+        
+        # Save the model
+        with open(model_filename, "wb") as f:
+            pickle.dump(self.encoder, f)
+        logging.info(f"Label Encoder saved to {model_filename}")
         
         logging.info("Label encoding completed.")
+        
         return df_transformed
 
 

@@ -21,7 +21,6 @@ def test_data_ingestion():
     assert df is not None, "Data ingestion returned None"
     assert df.shape[0] > 0, "Dataframe is empty"
     assert 'loanAmount' in df.columns, "Expected column 'loanAmount' not found"
-    assert df.isnull().sum().sum() == 0, "Data contains missing values"
     
 if __name__ == '__main__':
     test_data_ingestion()

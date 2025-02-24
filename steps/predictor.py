@@ -28,8 +28,9 @@ def predictor(
 
     # Define the columns the model expects
     expected_columns = [
-        "loanId", "payFrequency", "apr", "applicationDate", "loanStatus", 
-        "loanAmount", "approved", "isFunded", "state", "leadType"
+        "loanAmount", "apr", "nPaidOff", "isFunded", "state", "leadCost", "payFrequency", "originallyScheduledPaymentAmount", "originatedDate_day", "applicationDate_day", 
+        "loan_to_payment_ratio", "applicationDate_month", "originatedDate_year", "originatedDate_month", "is_monthly_payment", "leadType", "fpStatus", "originated",
+        "hasCF", "applicationDate_year", "approved"
     ]
     
     # Convert the data into a DataFrame with the correct columns

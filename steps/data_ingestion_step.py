@@ -4,7 +4,7 @@ from zenml import step
 import logging
 
 
-@step
+@step(enable_cache=False)
 def data_ingestion_step(file_path: str) -> pd.DataFrame:
     """Ingest data from a ZIP file using the appropriate DataIngestor."""
     # Determine the file extension

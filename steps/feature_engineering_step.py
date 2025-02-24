@@ -39,7 +39,7 @@ def feature_engineering(
     transformed_df = engineer.apply_feature_engineering(df)
     return transformed_df
 
-@step
+@step(enable_cache=False)
 def feature_engineering_step(df: pd.DataFrame) -> pd.DataFrame:
     """Applies date conversion, feature creation, categorical encoding, and numerical scaling."""
 

@@ -3,9 +3,11 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import pandas as pd
-from sklearn.base import ClassifierMixin
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, log_loss, classification_report, confusion_matrix
-from sklearn.preprocessing import LabelEncoder, label_binarize
+from sklearn.base import BaseEstimator
+from sklearn.metrics import (
+    mean_squared_error, r2_score, accuracy_score, precision_score, recall_score, 
+    f1_score, roc_auc_score, log_loss, classification_report, confusion_matrix
+)
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -13,14 +15,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # Abstract Base Class for Model Evaluation Strategy
 class ModelEvaluationStrategy(ABC):
     @abstractmethod
-    def evaluate_model(
-        self, model: ClassifierMixin, X_test: pd.DataFrame, y_test: pd.Series
-    ) -> dict:
+    def evaluate_model(self, model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
         """
         Abstract method to evaluate a model.
 
         Parameters:
-        model (ClassifierMixin): The trained model to evaluate.
+        model (BaseEstimator): The trained model to evaluate.
         X_test (pd.DataFrame): The testing data features.
         y_test (pd.Series): The testing data labels/target.
 
@@ -29,39 +29,82 @@ class ModelEvaluationStrategy(ABC):
         """
         pass
 
+# Concrete Strategy for Regression Model Evaluation
+class RegressionModelEvaluationStrategy(ModelEvaluationStrategy):
+    def evaluate_model(self, model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+        """
+        Evaluates a regression model using R-squared and Mean Squared Error.
+
+        Parameters:
+        model (BaseEstimator): The trained regression model to evaluate.
+        X_test (pd.DataFrame): The testing data features.
+        y_test (pd.Series): The testing data labels/target.
+
+        Returns:
+        dict: A dictionary containing R-squared and Mean Squared Error.
+        """
+        logging.info("Predicting using the trained model.")
+        y_pred = model.predict(X_test)
+
+        logging.info("Calculating evaluation metrics.")
+        mse = mean_squared_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+
+        metrics = {"Mean Squared Error": mse, "R-Squared": r2}
+
+        logging.info(f"Model Evaluation Metrics: {metrics}")
+        return metrics
+
 # Concrete Strategy for Classification Model Evaluation
 class ClassificationModelEvaluationStrategy(ModelEvaluationStrategy):
-    def evaluate_model(self, model: ClassifierMixin, X_test: pd.DataFrame, y_test: pd.Series, label_encoder) -> dict:
-        """Evaluates a classification model with Accuracy, Precision, Recall, and F1-score."""
+    def evaluate_model(self, model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+        """
+        Evaluates a classification model using Accuracy, Precision, Recall, and F1-score.
 
-        # Convert string labels to numeric labels
-        y_test = y_test.dropna()
-        y_test_encoded = label_encoder.transform(y_test)
-        
-        # Get all classes from the LabelEncoder
-        all_classes = label_encoder.classes_
+        Parameters:
+        model (BaseEstimator): The trained classification model to evaluate.
+        X_test (pd.DataFrame): The testing data features.
+        y_test (pd.Series): The testing data labels/target.
 
-        y_pred_proba = model.predict(X_test)
-        
-        # Convert probabilities to class labels
-        y_pred = y_pred_proba.argmax(axis=1)
-        
-        # Binarize y_test_encoded to match y_pred_proba shape
-        y_test_binarized = label_binarize(y_test_encoded, classes=np.arange(len(all_classes)))
+        Returns:
+        dict: A dictionary containing Accuracy, Precision, Recall, and F1-score.
+        """
+        logging.info("Predicting using the trained model.")
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test) if hasattr(model, "predict_proba") else None
 
+        logging.info("Calculating evaluation metrics.")
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted')
+        recall = recall_score(y_test, y_pred, average='weighted')
+        f1 = f1_score(y_test, y_pred, average='weighted')
+        
+        # AUC-ROC for multi-class (if probabilities are available)
+        auc_roc = roc_auc_score(y_test, y_proba, multi_class='ovr', average='weighted') if y_proba is not None else None
+        
+        # Log Loss (if probabilities are available)
+        logloss = log_loss(y_test, y_proba) if y_proba is not None else None
+        
+        # Classification Report
+        class_report = classification_report(y_test, y_pred, output_dict=True)
+        
+        # Confusion Matrix
+        conf_matrix = confusion_matrix(y_test, y_pred).tolist()
 
         metrics = {
-            "Accuracy": accuracy_score(y_test_encoded, y_pred),
-            "Precision": precision_score(y_test_encoded, y_pred, average="weighted"),
-            "Recall": recall_score(y_test_encoded, y_pred, average="weighted"),
-            "F1-Score": f1_score(y_test_encoded, y_pred, average="weighted"),
-            "AUC": roc_auc_score(y_test_binarized, y_pred_proba, multi_class="ovr", average="weighted") if len(all_classes) > 2 else roc_auc_score(y_test_encoded, y_pred_proba[:, 1]),
-            "LogLoss": log_loss(y_test_binarized, y_pred_proba),
-            "Classification Report": classification_report(y_test_encoded, y_pred, output_dict=True),
-            "Confusion Matrix": confusion_matrix(y_test_encoded, y_pred).tolist()
+            "Accuracy": accuracy,
+            "Precision": precision,
+            "Recall": recall,
+            "F1-Score": f1,
+            "AUC-ROC": auc_roc,
+            "Log Loss": logloss,
+            "Classification Report": class_report,
+            "Confusion Matrix": conf_matrix
         }
         
+        logging.info(f"Model Evaluation Metrics: {metrics}")
         return metrics
+
 
 # Context Class for Model Evaluation
 class ModelEvaluator:
@@ -84,12 +127,12 @@ class ModelEvaluator:
         logging.info("Switching model evaluation strategy.")
         self._strategy = strategy
 
-    def evaluate(self, model: ClassifierMixin, X_test: pd.DataFrame, y_test: pd.Series, label_encoder) -> dict:
+    def evaluate(self, model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
         """
         Executes the model evaluation using the current strategy.
 
         Parameters:
-        model (ClassifierMixin): The trained model to evaluate.
+        model (BaseEstimator): The trained model to evaluate.
         X_test (pd.DataFrame): The testing data features.
         y_test (pd.Series): The testing data labels/target.
 
@@ -97,6 +140,8 @@ class ModelEvaluator:
         dict: A dictionary containing evaluation metrics.
         """
         logging.info("Evaluating the model using the selected strategy.")
-        metrics = self._strategy.evaluate_model(model, X_test, y_test, label_encoder)
-        
-        return metrics
+        return self._strategy.evaluate_model(model, X_test, y_test)
+
+# Example usage
+# if __name__ == "__main__":
+#     pass

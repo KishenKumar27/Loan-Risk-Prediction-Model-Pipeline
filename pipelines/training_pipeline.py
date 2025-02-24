@@ -24,7 +24,7 @@ def ml_pipeline():
 
     # Data Ingestion Step
     raw_data = data_ingestion_step(
-        file_path="/Users/kishenkumarsivalingam/Documents/MLE/data.zip"
+        file_path="data.zip"
     )
 
     # Drop Irrelevant Columns and Handling Missing Values Step

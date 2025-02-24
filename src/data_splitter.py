@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from imblearn.combine import SMOTETomek
+from imblearn.over_sampling import RandomOverSampler
+
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -31,7 +34,7 @@ class DataSplittingStrategy(ABC):
 # ---------------------------------------------
 # This strategy implements a simple train-test split.
 class SimpleTrainTestSplitStrategy(DataSplittingStrategy):
-    def __init__(self, test_size=0.2, random_state=42):
+    def __init__(self, test_size=0.2, random_state=42, apply_smote=True):
         """
         Initializes the SimpleTrainTestSplitStrategy with specific parameters.
 
@@ -41,6 +44,7 @@ class SimpleTrainTestSplitStrategy(DataSplittingStrategy):
         """
         self.test_size = test_size
         self.random_state = random_state
+        self.apply_smote = apply_smote
 
     def split_data(self, df: pd.DataFrame, target_column: str):
         """
@@ -53,16 +57,33 @@ class SimpleTrainTestSplitStrategy(DataSplittingStrategy):
         Returns:
         X_train, X_test, y_train, y_test: The training and testing splits for features and target.
         """
-        logging.info("Performing simple train-test split.")
+        logging.info("Performing SMOTE before train-test split.")
         X = df.drop(columns=[target_column])
         y = df[target_column]
-
+        
+        logging.info(f"Class distribution before resampling: {y.value_counts().to_dict()}")
+        
+        if self.apply_smote:
+            class_counts = y.value_counts()
+            if (class_counts < 2).any():
+                logging.warning("Some classes have fewer than 2 instances. Using RandomOverSampler instead of SMOTE.")
+                oversampler = RandomOverSampler(random_state=self.random_state)
+                X, y = oversampler.fit_resample(X, y)
+            else:
+                logging.info("Applying SMOTETomek to balance the dataset.")
+                smote = SMOTETomek(random_state=self.random_state)
+                X, y = smote.fit_resample(X, y)
+                logging.info("SMOTETomek applied successfully.")
+            
+            logging.info(f"Class distribution after resampling: {y.value_counts().to_dict()}")
+        
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=self.test_size, random_state=self.random_state
+            X, y, test_size=self.test_size, random_state=self.random_state, stratify=y
         )
-
+        
         logging.info("Train-test split completed.")
         return X_train, X_test, y_train, y_test
+
 
 
 # Context Class for Data Splitting

@@ -6,7 +6,7 @@ from zenml import step
 from typing import List
 
 
-@step
+@step(enable_cache=False)
 def outlier_detection_step(df: pd.DataFrame, column_names: List[str]) -> pd.DataFrame:
     """Detects and removes outliers using OutlierDetector for specified columns."""
     logging.info(f"Starting outlier detection step with DataFrame of shape: {df.shape}")

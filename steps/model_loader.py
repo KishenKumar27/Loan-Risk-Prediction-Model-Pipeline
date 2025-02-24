@@ -15,7 +15,7 @@ def model_loader(model_name: str) -> Pipeline:
         Pipeline: The loaded scikit-learn pipeline.
     """
     # Define the model file path
-    model_dir = "/Users/kishenkumarsivalingam/Documents/MLE/models"
+    model_dir = "/models_pipeline"
     model_filename = os.path.join(model_dir, "loan_risk_model.pkl")
     
     if not os.path.exists(model_filename):
